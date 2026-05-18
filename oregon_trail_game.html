@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oregon Trail — Colony Survival</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #f5f0e8;
+    color: #2a1f0e;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  #game {
+    width: 100%;
+    max-width: 720px;
+  }
+
+  /* Header */
+  .game-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #c9b99a;
+  }
+  .game-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #3d2b0e;
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+  }
+  .game-header .subtitle {
+    font-size: 13px;
+    color: #7a6040;
+    font-style: italic;
+  }
+
+  /* Progress dots */
+  .progress-dots {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #d4c5a9;
+    transition: background 0.3s;
+  }
+  .dot.done { background: #5a7a35; }
+  .dot.current { background: #b07020; }
+
+  /* Warning banner */
+  .warning-banner {
+    background: #f5e0b0;
+    color: #7a4800;
+    border: 1px solid #d4b060;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-family: Georgia, serif;
+  }
+
+  /* Stat cards */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .stat-card {
+    background: #fffdf7;
+    border: 1px solid #c9b99a;
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #7a6040;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 5px;
+    font-family: Arial, sans-serif;
+  }
+  .stat-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #2a1f0e;
+    line-height: 1;
+  }
+  .stat-value.danger { color: #b83030; }
+  .stat-value.warn   { color: #a06010; }
+  .stat-value.ok     { color: #2a1f0e; }
+  .stat-bar-fill {
+    height: 5px;
+    border-radius: 3px;
+    background: #e0d5c0;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+  .stat-bar-inner {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease, background 0.5s ease;
+  }
+
+  /* Phase / scenario */
+  .phase-banner {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #7a6040;
+    margin-bottom: 6px;
+    font-family: Arial, sans-serif;
+  }
+  .scenario-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #3d2b0e;
+    text-align: center;
+    margin-bottom: 0.6rem;
+    line-height: 1.3;
+  }
+  .scenario-desc {
+    font-size: 14px;
+    color: #4a3820;
+    line-height: 1.7;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Choice buttons */
+  .choices-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+  .choice-btn {
+    background: #fffdf7;
+    border: 1.5px solid #c9b99a;
+    border-radius: 12px;
+    padding: 16px 18px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    font-family: Georgia, serif;
+  }
+  .choice-btn:hover {
+    background: #f5efe0;
+    border-color: #a08040;
+    transform: translateY(-1px);
+  }
+  .choice-btn:active { transform: translateY(0); }
+  .choice-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #3d2b0e;
+    margin-bottom: 7px;
+    line-height: 1.4;
+  }
+  .choice-desc {
+    font-size: 12px;
+    color: #6a5030;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+  .effect-row {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .effect-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+  }
+  .effect-tag.pos { background: #ddeec0; color: #3a5a18; }
+  .effect-tag.neg { background: #f5d0d0; color: #8a2020; }
+  .effect-tag.neu { background: #e8e0d0; color: #6a5030; }
+
+  /* Result box */
+  .result-box {
+    background: #fffdf7;
+    border: 1.5px solid #c9b99a;
+    border-left: 5px solid #b07020;
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.1rem;
+  }
+  .result-chosen {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #7a6040;
+    margin-bottom: 5px;
+    font-family: Arial, sans-serif;
+  }
+  .result-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #3d2b0e;
+    margin-bottom: 8px;
+  }
+  .result-desc {
+    font-size: 14px;
+    color: #4a3820;
+    line-height: 1.65;
+  }
+  .delta-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .delta-tag {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 11px;
+    border-radius: 100px;
+    font-family: Arial, sans-serif;
+  }
+  .delta-tag.pos { background: #ddeec0; color: #3a5a18; }
+  .delta-tag.neg { background: #f5d0d0; color: #8a2020; }
+  .delta-tag.zero { background: #e8e0d0; color: #6a5030; }
+
+  /* Next button */
+  .next-btn {
+    display: block;
+    width: 100%;
+    padding: 13px;
+    background: #3d2b0e;
+    color: #f5efe0;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    font-family: Georgia, serif;
+    letter-spacing: 0.02em;
+    transition: background 0.15s;
+  }
+  .next-btn:hover { background: #5a4020; }
+
+  /* End screen */
+  .end-card {
+    text-align: center;
+    padding: 1rem 0 2rem;
+  }
+  .end-result-banner {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 6px 18px;
+    border-radius: 100px;
+    display: inline-block;
+    margin-bottom: 1rem;
+    font-family: Arial, sans-serif;
+  }
+  .end-result-banner.survived { background: #ddeec0; color: #3a5a18; }
+  .end-result-banner.failed   { background: #f5d0d0; color: #8a2020; }
+  .end-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: #3d2b0e;
+    margin-bottom: 0.6rem;
+  }
+  .end-sub {
+    font-size: 14px;
+    color: #4a3820;
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .final-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+  }
+  .reflection-box {
+    background: #fffdf7;
+    border: 1px solid #c9b99a;
+    border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+    text-align: left;
+    margin-bottom: 1.5rem;
+  }
+  .reflection-box h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #3d2b0e;
+    margin-bottom: 10px;
+  }
+  .reflection-box ol {
+    padding-left: 1.2rem;
+  }
+  .reflection-box li {
+    font-size: 13px;
+    color: #4a3820;
+    line-height: 1.6;
+    margin-bottom: 5px;
+  }
+  .restart-btn {
+    display: inline-block;
+    padding: 11px 28px;
+    background: #fffdf7;
+    border: 1.5px solid #c9b99a;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #3d2b0e;
+    font-family: Georgia, serif;
+    transition: background 0.15s;
+  }
+  .restart-btn:hover { background: #f5efe0; }
+
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 1px solid #c9b99a;
+    margin: 1.25rem 0;
+  }
+
+  @media (max-width: 500px) {
+    .choices-grid { grid-template-columns: 1fr; }
+    .stats-bar { gap: 6px; }
+    .stat-value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="game">
+  <div class="game-header">
+    <h1>The Oregon Trail</h1>
+    <p class="subtitle">A colony survival game &mdash; 1843</p>
+  </div>
+  <div id="screen"></div>
+</div>
+
+<script>
+const SCENARIOS = [
+  {
+    phase: "Setting Out — May 1843",
+    title: "Which trail do you take?",
+    desc: "Your wagon party stands at Independence, Missouri. Two routes stretch westward. Choose carefully — this decision shapes everything that follows.",
+    choices: [
+      {
+        label: "Follow the main Oregon Trail",
+        desc: "Well-traveled but crowded. Other wagons mean competition for grass and water.",
+        effects: { food: -1, health: 0, morale: +2 },
+        result: "The main trail is crowded — you wait at river crossings and the grass near camp is grazed thin. But familiar company lifts everyone's spirits.",
+        resultEffects: { food: -1, morale: +2 }
+      },
+      {
+        label: "Take the Sublette Cutoff",
+        desc: "Saves 85 miles but crosses 50 dry miles with no water. High risk, high reward.",
+        effects: { food: +2, health: -2, morale: 0 },
+        result: "The shortcut is brutal. Two days without water. Three people fall ill. But you are ahead of the pack and have preserved more supplies.",
+        resultEffects: { food: +2, health: -2 }
+      }
+    ]
+  },
+  {
+    phase: "On the Trail — June 1843",
+    title: "The river is flooding",
+    desc: "You reach the Kansas River crossing. It is running fast and deep from spring rains. The ferryman wants $3 per wagon — nearly all your cash.",
+    choices: [
+      {
+        label: "Pay the ferryman",
+        desc: "Safe crossing, but the money hurts your supply budget.",
+        effects: { food: -2, health: +1, morale: 0 },
+        result: "The ferry crossing is smooth. Your oxen arrive dry and calm. You reach the next fort with less money than you hoped, but everyone is intact.",
+        resultEffects: { food: -2, health: +1 }
+      },
+      {
+        label: "Ford it yourself",
+        desc: "Save the money, risk the river.",
+        effects: { food: +1, health: -3, morale: -1 },
+        result: "Your lead wagon tips. Supplies soak. A child is knocked under and pulled out — alive, barely. Several take a chill that worsens over the following days.",
+        resultEffects: { health: -3, food: +1, morale: -1 }
+      }
+    ]
+  },
+  {
+    phase: "On the Trail — June 1843",
+    title: "Someone has cholera",
+    desc: "A member of your party shows signs of cholera — violent cramping, rapid dehydration. It spreads fast in wagon trains. What do you do?",
+    choices: [
+      {
+        label: "Quarantine the sick and push forward",
+        desc: "Hard-hearted, but effective. The sick travel separately.",
+        effects: { food: 0, health: +2, morale: -2 },
+        result: "The quarantine holds. The sick person survives — barely. But the rest of the party never quite look at you the same way.",
+        resultEffects: { health: +2, morale: -2 }
+      },
+      {
+        label: "Halt the train and nurse the sick",
+        desc: "Humane, but you lose days and risk the illness spreading.",
+        effects: { food: -1, health: -2, morale: +1 },
+        result: "Two more people catch it. You lose four days. The food stores thin. But your party is grateful, and that bond matters on the long road ahead.",
+        resultEffects: { food: -1, health: -2, morale: +1 }
+      }
+    ]
+  },
+  {
+    phase: "Fort Laramie — July 1843",
+    title: "Resupply at Fort Laramie",
+    desc: "Fort Laramie is your last major resupply before the mountains. Prices are steep. What do you spend your remaining money on?",
+    choices: [
+      {
+        label: "Buy extra food and medicine",
+        desc: "Stock up for the hard miles ahead.",
+        effects: { food: +3, health: +1, morale: -1 },
+        result: "You leave the fort heavy with supplies but light on cash. The food gives you security — but your party is anxious about money for the settlement ahead.",
+        resultEffects: { food: +3, health: +1, morale: -1 }
+      },
+      {
+        label: "Save the money, push on lean",
+        desc: "You will hunt and forage along the way.",
+        effects: { food: -1, health: 0, morale: +2 },
+        result: "Your hunters bring in game for a few days. Morale climbs. Then the game dries up and the mountains loom ahead. You push forward hoping it improves.",
+        resultEffects: { food: -1, morale: +2 }
+      }
+    ]
+  },
+  {
+    phase: "Rocky Mountains — August 1843",
+    title: "The mountain pass is snowing",
+    desc: "It is only August, but an early snowstorm threatens to close the South Pass. You need to cross before it seals. Push through now, or wait it out?",
+    choices: [
+      {
+        label: "Push through immediately",
+        desc: "Risk the storm to guarantee the crossing.",
+        effects: { food: -2, health: -2, morale: +1 },
+        result: "The storm catches you mid-pass. An ox goes lame. Two people suffer frostbite. But you are over the mountains. The descent is hard. You made it through.",
+        resultEffects: { food: -2, health: -2, morale: +1 }
+      },
+      {
+        label: "Wait three days and hope it clears",
+        desc: "Rest the party, but risk the window closing permanently.",
+        effects: { food: -2, health: +1, morale: -1 },
+        result: "The storm clears partially on day three. The crossing is still hard but survivable. You are behind schedule and food-poor — but the party is intact.",
+        resultEffects: { food: -2, health: +1, morale: -1 }
+      }
+    ]
+  },
+  {
+    phase: "Rocky Mountains — August 1843",
+    title: "Your lead ox is lame",
+    desc: "Your strongest ox has gone lame. Without a full team, your wagon slows to a crawl. Something must give.",
+    choices: [
+      {
+        label: "Abandon heavy supplies, keep moving",
+        desc: "Ditch the iron stove and furniture. The ox can manage a lighter load.",
+        effects: { food: -1, health: 0, morale: -2 },
+        result: "The side of the trail is already littered with other families' hopes. You add yours. The wagon rolls, but the mood is grim and the losses feel permanent.",
+        resultEffects: { food: -1, morale: -2 }
+      },
+      {
+        label: "Slow down and nurse the ox",
+        desc: "Fall behind. Risk the weather. Hope the ox recovers.",
+        effects: { food: -1, health: +1, morale: 0 },
+        result: "Three days of slow travel and the ox is walking again — barely. You are now behind every other wagon party. The mountains are not done with you.",
+        resultEffects: { food: -1, health: +1 }
+      }
+    ]
+  },
+  {
+    phase: "The Willamette Valley — October 1843",
+    title: "Conflict in the party",
+    desc: "Months of close quarters have worn everyone thin. Two families are in open conflict over how land claims will be divided. The group threatens to split.",
+    choices: [
+      {
+        label: "Force a binding vote, majority rules",
+        desc: "Democratic, but the losing side will be resentful going into winter.",
+        effects: { food: 0, health: 0, morale: -1 },
+        result: "The vote splits 6 to 4. The losing families haven't spoken in three days. The group is moving forward, but something has fractured that may not heal.",
+        resultEffects: { morale: -1 }
+      },
+      {
+        label: "Mediate: let each family choose their plot first",
+        desc: "Time-consuming, but everyone feels heard.",
+        effects: { food: -1, health: 0, morale: +2 },
+        result: "The long meeting is painful, but by the end people are laughing — nervous laughing, but still. The community feels like a community again. You are hungry and tired but hopeful.",
+        resultEffects: { food: -1, morale: +2 }
+      }
+    ]
+  },
+  {
+    phase: "The Willamette Valley — November 1843",
+    title: "Winter is almost here",
+    desc: "You have reached the Willamette Valley but there is not enough time before winter to do everything. You must choose what to build first.",
+    choices: [
+      {
+        label: "Build solid shelters for everyone",
+        desc: "Prioritize staying alive through winter. Food can be hunted.",
+        effects: { food: -1, health: +3, morale: 0 },
+        result: "The cabins are rough but solid. The first snow comes two weeks later. Everyone is under a roof. The food is short, but no one freezes.",
+        resultEffects: { health: +3, food: -1 }
+      },
+      {
+        label: "Focus on storing food for winter",
+        desc: "Preserve every scrap. Shelters can wait.",
+        effects: { food: +3, health: -2, morale: -1 },
+        result: "The root cellar is full. The camp is half-built. When hard frost comes in January, two people develop serious lung sickness. The food remains. Not everyone does.",
+        resultEffects: { food: +3, health: -2, morale: -1 }
+      }
+    ]
+  },
+  {
+    phase: "First Winter — February 1844",
+    title: "A neighboring party is starving",
+    desc: "A scout reports another wagon party camped two miles away. They are out of food. They have four children. They are asking to share your winter stores.",
+    choices: [
+      {
+        label: "Share what you can spare",
+        desc: "Reduce your own stores. Strengthen your community reputation.",
+        effects: { food: -2, health: 0, morale: +2 },
+        result: "You give two families enough to last the winter. Word spreads. When spring comes, those families help build your mill. Generosity, compounded.",
+        resultEffects: { food: -2, morale: +2 }
+      },
+      {
+        label: "Turn them away — you cannot afford to share",
+        desc: "Protect your own. Survive first.",
+        effects: { food: +1, health: 0, morale: -3 },
+        result: "Two of those children do not survive the winter. You did not cause it — not directly. But your party knows what you chose. Three members leave the colony in spring.",
+        resultEffects: { food: +1, morale: -3 }
+      }
+    ]
+  }
+];
+
+const MAX_STAT = 20;
+const SCENARIO_COUNT = SCENARIOS.length;
+
+let state = { food: 10, health: 10, morale: 10 };
+let currentIdx = 0;
+let choiceResult = null;
+let gameOver = false;
+
+function clamp(v) { return Math.max(0, Math.min(MAX_STAT, v)); }
+function statColor(v) { return v <= 2 ? 'danger' : v <= 5 ? 'warn' : 'ok'; }
+function barColor(v) { return v <= 2 ? '#b83030' : v <= 5 ? '#a06010' : '#5a7a35'; }
+function pct(v) { return Math.round((v / MAX_STAT) * 100) + '%'; }
+
+function renderStats(food, health, morale) {
+  const warns = [];
+  if (food <= 3) warns.push('Food critically low');
+  if (health <= 3) warns.push('Health dangerously low');
+  if (morale <= 3) warns.push('Morale near collapse');
+
+  const warningHtml = warns.length
+    ? `<div class="warning-banner">&#9888; Warning: ${warns.join(' &middot; ')}</div>`
+    : '';
+
+  return `${warningHtml}
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-label">Food</div>
+      <div class="stat-value ${statColor(food)}">${food}</div>
+      <div class="stat-bar-fill"><div class="stat-bar-inner" style="width:${pct(food)};background:${barColor(food)}"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Health</div>
+      <div class="stat-value ${statColor(health)}">${health}</div>
+      <div class="stat-bar-fill"><div class="stat-bar-inner" style="width:${pct(health)};background:${barColor(health)}"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Morale</div>
+      <div class="stat-value ${statColor(morale)}">${morale}</div>
+      <div class="stat-bar-fill"><div class="stat-bar-inner" style="width:${pct(morale)};background:${barColor(morale)}"></div></div>
+    </div>
+  </div>`;
+}
+
+function renderDots(current) {
+  let html = '<div class="progress-dots">';
+  for (let i = 0; i < SCENARIO_COUNT; i++) {
+    let cls = i < current ? 'done' : (i === current ? 'current' : '');
+    html += `<div class="dot ${cls}" title="Scenario ${i + 1} of ${SCENARIO_COUNT}"></div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function effectTags(effects) {
+  const tags = [];
+  const map = { food: 'Food', health: 'Health', morale: 'Morale' };
+  for (const [k, v] of Object.entries(effects)) {
+    if (v === 0) continue;
+    const sign = v > 0 ? '+' : '';
+    const cls = v > 0 ? 'pos' : 'neg';
+    tags.push(`<span class="effect-tag ${cls}">${sign}${v} ${map[k]}</span>`);
+  }
+  if (!tags.length) tags.push('<span class="effect-tag neu">no stat change</span>');
+  return tags.join('');
+}
+
+function deltaTags(effects) {
+  const tags = [];
+  const map = { food: 'Food', health: 'Health', morale: 'Morale' };
+  for (const [k, v] of Object.entries(effects)) {
+    if (v === undefined || v === 0) continue;
+    const sign = v > 0 ? '+' : '';
+    const cls = v > 0 ? 'pos' : 'neg';
+    tags.push(`<span class="delta-tag ${cls}">${sign}${v} ${map[k]}</span>`);
+  }
+  if (!tags.length) tags.push('<span class="delta-tag zero">no changes</span>');
+  return tags.join('');
+}
+
+function applyChoice(choice) {
+  const e = choice.resultEffects || choice.effects;
+  state.food   = clamp(state.food   + (e.food   || 0));
+  state.health = clamp(state.health + (e.health || 0));
+  state.morale = clamp(state.morale + (e.morale || 0));
+  choiceResult = choice;
+  if (state.food === 0 || state.health === 0 || state.morale === 0) gameOver = true;
+}
+
+function render() {
+  const screen = document.getElementById('screen');
+
+  if (gameOver) { renderEnd(screen); return; }
+  if (currentIdx >= SCENARIO_COUNT) { renderEnd(screen); return; }
+
+  const scenario = SCENARIOS[currentIdx];
+
+  if (choiceResult) {
+    const e = choiceResult.resultEffects || choiceResult.effects;
+    screen.innerHTML = `
+      ${renderDots(currentIdx)}
+      ${renderStats(state.food, state.health, state.morale)}
+      <div class="result-box">
+        <div class="result-chosen">Your choice</div>
+        <div class="result-title">${choiceResult.label}</div>
+        <div class="result-desc">${choiceResult.result}</div>
+        <div class="delta-row">${deltaTags(e)}</div>
+      </div>
+      <button class="next-btn" onclick="nextScenario()">Continue the journey &rarr;</button>
+    `;
+  } else {
+    const btns = scenario.choices.map((c, i) => `
+      <button class="choice-btn" onclick="makeChoice(${i})">
+        <div class="choice-title">${c.label}</div>
+        <div class="choice-desc">${c.desc}</div>
+        <div class="effect-row">${effectTags(c.effects)}</div>
+      </button>
+    `).join('');
+
+    screen.innerHTML = `
+      ${renderDots(currentIdx)}
+      ${renderStats(state.food, state.health, state.morale)}
+      <hr class="divider">
+      <div class="phase-banner">${scenario.phase}</div>
+      <div class="scenario-title">${scenario.title}</div>
+      <div class="scenario-desc">${scenario.desc}</div>
+      <div class="choices-grid">${btns}</div>
+    `;
+  }
+}
+
+function renderEnd(screen) {
+  const survived = state.food > 0 && state.health > 0 && state.morale > 0;
+  const total = state.food + state.health + state.morale;
+
+  let bannerCls, title, sub;
+  if (!survived) {
+    const failed = [];
+    if (state.food === 0) failed.push('food');
+    if (state.health === 0) failed.push('health');
+    if (state.morale === 0) failed.push('morale');
+    bannerCls = 'failed';
+    title = 'The colony did not survive.';
+    sub = `Your ${failed.join(' and ')} reached zero. The trail claimed your wagon party. Thousands attempted this journey — not all made it. What would you do differently?`;
+  } else if (total >= 48) {
+    bannerCls = 'survived';
+    title = 'A thriving colony!';
+    sub = `Your party arrived healthy, well-fed, and in high spirits. An exceptional journey. Final score: ${total} / 60`;
+  } else if (total >= 36) {
+    bannerCls = 'survived';
+    title = 'Your colony survived!';
+    sub = `You made it to the Willamette Valley battered but intact. A new life begins. Final score: ${total} / 60`;
+  } else {
+    bannerCls = 'survived';
+    title = 'Your colony survived — barely.';
+    sub = `You are alive. The winter was brutal and the losses were real. You made it, but it cost you. Final score: ${total} / 60`;
+  }
+
+  screen.innerHTML = `
+    <div class="end-card">
+      <div class="end-result-banner ${bannerCls}">${survived ? 'Spring 1844 &mdash; You Made It' : 'The Colony Failed'}</div>
+      <div class="end-title">${title}</div>
+      <div class="end-sub">${sub}</div>
+      <div class="final-stats">
+        <div class="stat-card">
+          <div class="stat-label">Final Food</div>
+          <div class="stat-value ${statColor(state.food)}">${state.food}</div>
+          <div class="stat-bar-fill"><div class="stat-bar-inner" style="width:${pct(state.food)};background:${barColor(state.food)}"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Final Health</div>
+          <div class="stat-value ${statColor(state.health)}">${state.health}</div>
+          <div class="stat-bar-fill"><div class="stat-bar-inner" style="width:${pct(state.health)};background:${barColor(state.health)}"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Final Morale</div>
+          <div class="stat-value ${statColor(state.morale)}">${state.morale}</div>
+          <div class="stat-bar-fill"><div class="stat-bar-inner" style="width:${pct(state.morale)};background:${barColor(state.morale)}"></div></div>
+        </div>
+      </div>
+      <div class="reflection-box">
+        <h3>Group Reflection Questions</h3>
+        <ol>
+          <li>What was your best decision, and why?</li>
+          <li>Which choice hurt you most? Were you surprised by the outcome?</li>
+          <li>Real Oregon Trail travelers faced these same tradeoffs. What does that tell you about what made westward expansion so difficult?</li>
+          <li>Which stat was hardest to keep up — food, health, or morale? Why do you think that is?</li>
+        </ol>
+      </div>
+      <button class="restart-btn" onclick="restartGame()">Play Again</button>
+    </div>
+  `;
+}
+
+function makeChoice(idx) {
+  applyChoice(SCENARIOS[currentIdx].choices[idx]);
+  render();
+}
+
+function nextScenario() {
+  choiceResult = null;
+  currentIdx++;
+  render();
+}
+
+function restartGame() {
+  state = { food: 10, health: 10, morale: 10 };
+  currentIdx = 0;
+  choiceResult = null;
+  gameOver = false;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
